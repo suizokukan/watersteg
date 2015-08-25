@@ -83,8 +83,8 @@
 
         o version 2 (2015_08_25)
 
-                --version argument; improve the messages display by creating the
-                files;
+                --version argument; improve the messages display when the files
+                are being created.
 """
 
 import argparse

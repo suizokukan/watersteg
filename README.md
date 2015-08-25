@@ -32,6 +32,8 @@ GPLv3 / Python2|3 / Linux : apply a watermark to an image and steghide.
 
   -h, --help            show this help message and exit
 
+  --version             show the version and exit
+
   --inputfile INPUTFILE
                         input file (default: None)
 
@@ -53,3 +55,7 @@ GPLv3 / Python2|3 / Linux : apply a watermark to an image and steghide.
 
                 initial version, pylint:10
     
+        o version 2 (2015_08_25)
+
+                --version argument; improve the messages display when the files
+                are being created.
