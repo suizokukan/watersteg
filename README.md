@@ -16,7 +16,7 @@ GPLv3 / Python2|3 / Linux : apply a watermark to an image and steghide.
         If you want to check what's written in your steghide'd image :
         $ steghide extract -sf picture_steghide.jpg
 
-        NB : the destination path must exist.
+        NB : the destination path must exist otherwise an error will be raised.
 
 #  transformations :
 
