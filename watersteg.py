@@ -115,7 +115,7 @@ import os.path
 import sys
 import tempfile
 
-PROGRAM_VERSION = "2"
+PROGRAM_VERSION = "3"
 PROGRAM_NAME = "Watersteg"
 
 # file where the message to be embed will be written. This file will be erased
