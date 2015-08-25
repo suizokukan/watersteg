@@ -19,33 +19,34 @@
 #    along with Watersteg.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 """
-    ❏Watersteg project❏
+     Watersteg project : apply a watermark and some steganographic data in an
+                         image file.
 
-     waterhide.py : apply a watermark & steghide
+     Use this Python2/3 script in a Linux environment to apply some
+     transformations (watermark + steghide) to an image or a group of images.
 
-        Use this Python2/3 script in a Linux environment to apply some
-        transformations (watermark + steghide) to an image.
+     External programs required by watersteg :
+         o ImageMagick (http://www.imagemagick.org/script/index.php)
+         o Steghide (http://steghide.sourceforge.net/)
 
-        External programs required by watersteg :
+  ______________________________________________________________________________
 
-        o ImageMagick (http://www.imagemagick.org/script/index.php)
-        o Steghide (http://steghide.sourceforge.net/)
-
-        Usage (see arguments below) :
+  Usage (see detailed arguments below) :
 
         $ watersteg.py --help
-
         $ watersteg.py --source "img/IMG_4280.JPG" --passphrase="secret phrase" --message="Hello !"
-
         $ watersteg.py --source path/ --passphrase="secret phrase" --message="Hello !"
+        $ watersteg.py --source path/*.jpg --passphrase="secret phrase" --message="Hello !"
 
         NB : the destination path must exist.
 
+
         If you want to check what's written in a steghide'd image(s) :
+
         $ steghide extract -sf picture_steghide.jpg
   ______________________________________________________________________________
 
-  transformations :
+  Transformations :
 
         (1) the original image is resized, watermarked and steghide'd.
 
@@ -61,36 +62,39 @@
                 o new file name : FILENAME__TRANS2__FORMAT
   ______________________________________________________________________________
 
-  arguments :
+  Arguments :
 
   -h, --help            show this help message and exit
 
   --version             show the version and exit
 
   --source SOURCE
-                        input file/path (default: None)
+                        input file/path (default: None). Wildcards accepted.
 
   --destpath DESTPATH
                         output path (default: ./)
 
-  --debug {True,False}  display debug messages (default: False)
+  --debug               display debug messages (default: False)
 
   --passphrase PASSPHRASE
                         steghide passphrase (default: passphrase)
 
   --message MESSAGE     steghide message to be embed (default: message)
 
-  --quiet {True,False}  disallow common messages' display; only the error
+  --quiet               disallow common messages' display; only the error
                         messages will be display (default: False)
   ______________________________________________________________________________
 
-  history :
+  History :
 
         o version 4 (2015_08_03)
 
                 o --source can be a path or a filename; the wildcards are accepted;
+                o --quiet and --debug are now standalone options (no --quiet=True
+                  anymore !)
                 o an error is raised if the source is a file and if it doesn't exist;
                 o improved the documentation;
+                o raw Pylint : 10
 
         o version 3 (2015_08_25)
 
@@ -100,18 +104,20 @@
                 o temporary files are now created by calling tempfile.NamedTemporaryFile()
                 o the target files' name are defined at the beginning of the process;
                 o improved the documentation;
+                o raw Pylint : 10
 
         o version 2 (2015_08_25)
 
                 o --version argument;
                 o improve the messages display when the files are being created.
+                o raw Pylint : 10
 
         o version 1 (2015_08_25)
 
                 o initial version, pylint:10
   ______________________________________________________________________________
 
-    return value/error messages
+  return value/error messages
 
         o no error value is returned.
         o error messages begin with PROMPT + " !!", normal messages with the PROMPT .
@@ -153,7 +159,7 @@ def system(order):
 
         Display the order if an error occurs and stop the program.
     """
-    if DEBUG:
+    if ARGS.debug:
         print("@@ os.system() : \"{0}\"".format(order))
 
     return os.system(order)
@@ -202,7 +208,7 @@ def get_args():
     parser.add_argument('--source',
                         type=str,
                         required=True,
-                        help="input file")
+                        help="input file or input directory. Wildcards accepted")
 
     parser.add_argument('--destpath',
                         type=str,
@@ -210,9 +216,7 @@ def get_args():
                         help="output path")
 
     parser.add_argument('--debug',
-                        type=str,
-                        choices=('True', 'False'),
-                        default="False",
+                        action="store_true",
                         help="display debug messages")
 
     parser.add_argument('--passphrase',
@@ -228,9 +232,7 @@ def get_args():
                         help="steghide message to be embed")
 
     parser.add_argument('--quiet',
-                        type=str,
-                        choices=('True', 'False'),
-                        default="False",
+                        action="store_true",
                         help="disallow common messages' display; " \
                              "only the error messages will be display")
 
@@ -251,7 +253,7 @@ def transform1__r400_wm_s(sourcefilename, destfilename):
         system("convert \"{0}\" -resize 400 \"{1}\"".format(sourcefilename,
                                                             tmpfile.name))
 
-        if not QUIET:
+        if not ARGS.quiet:
             print("     {0} ... creating {1} ...".format(PROMPT, destfilename))
 
         # watermark
@@ -276,7 +278,7 @@ def transform2__steghide(sourcefilename, destfilename):
 
         this function should be only called by apply_transformations()
     """
-    if not QUIET:
+    if not ARGS.quiet:
         print("     {0} ... creating {1} ....".format(PROMPT, destfilename))
 
     system("steghide embed -cf \"{0}\" -ef \"{1}\" " \
@@ -321,8 +323,6 @@ def apply_transformations(destination_path,
 
 # (0.a) arguments from the command line
 ARGS = get_args()
-QUIET = (ARGS.quiet == 'True')
-DEBUG = (ARGS.debug == 'True')
 
 # (0.b) source file/directory
 SOURCE = ARGS.source
@@ -346,14 +346,13 @@ if not os.path.exists(DESTPATH):
     sys.exit()
 
 # (0.d) displaying the summary
-if not QUIET:
+if not ARGS.quiet:
     print("=== {0} v. {1} === ".format(PROGRAM_NAME, PROGRAM_VERSION))
 
     print("{0} source=\"{1}\" ({2})".format(PROMPT, SOURCE, SOURCE_TYPE))
     if SOURCE_TYPE == "neither a file nor a directory":
-        if not QUIET:
-            print("{0} source \"{1}\" is neither an existing file nor an existing directory : " \
-                  "it will be analysed as a path with wildcards.".format(PROMPT, SOURCE))
+        print("{0} source \"{1}\" is neither an existing file nor an existing directory : " \
+              "it will be analysed as a path with wildcards.".format(PROMPT, SOURCE))
 
     print("{0} output path=\"{1}\"".format(PROMPT, DESTPATH))
 
@@ -438,8 +437,16 @@ else:
 system("rm {0}".format(STEGHIDE__EMBED_FILE))
 
 # (2b) goodbye :
-if not QUIET:
+if not ARGS.quiet:
     print("{0} done with \"{1}\" : " \
           "{2} file(s) read and transformed.".format(PROMPT,
                                                      SOURCE,
                                                      NUMBER_OF_FILES_READ_AND_TRANSFORMED))
+
+#///////////////////////////////////////////////////////////////////////////////
+#///////////////////////////////////////////////////////////////////////////////
+#///                                                                         ///
+#///                          MAIN EXIT POINT                                ///
+#///                                                                         ///
+#///////////////////////////////////////////////////////////////////////////////
+#///////////////////////////////////////////////////////////////////////////////
