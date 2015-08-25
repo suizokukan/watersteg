@@ -56,6 +56,8 @@
 
   -h, --help            show this help message and exit
 
+  --version             show the version and exit
+
   --inputfile INPUTFILE
                         input file (default: None)
 
@@ -78,13 +80,18 @@
         o version 1 (2015_08_25)
 
                 initial version, pylint:10
+
+        o version 2 (2015_08_25)
+
+                --version argument; improve the messages display by creating the
+                files;
 """
 
 import argparse
 import os.path
 import sys
 
-PROGRAM_VERSION = "1"
+PROGRAM_VERSION = "2"
 PROGRAM_NAME = "Watersteg"
 
 # file where the message to be embed will be written. This file will be erased
@@ -136,6 +143,11 @@ def get_args():
     parser = argparse.ArgumentParser(description="{0} v. {1}".format(PROGRAM_NAME, PROGRAM_VERSION),
                                      epilog="by suizokukan AT orange DOT fr",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument('--version',
+                        action='version',
+                        version="{0} v. {1}".format(PROGRAM_NAME, PROGRAM_VERSION),
+                        help="show the version and exit")
 
     parser.add_argument('--inputfile',
                         type=str,
@@ -220,6 +232,10 @@ TMPFILENAME = "{0}{1}_400x{2}".format(OUTPUTPATH, BASENAME, EXTENSION)
 system("convert \"{0}\" -resize 400 \"{1}\"".format(INPUTFILE, TMPFILENAME))
 
 FILENAME__TRANS1 = "{0}{1}_400x_watermark_steghide{2}".format(OUTPUTPATH, BASENAME, EXTENSION)
+
+if not QUIET:
+    print("... creating {0} ....".format(FILENAME__TRANS1))
+
 system("convert -size 240x160 xc:none -fill grey " \
        "-gravity NorthWest -draw \"text 10,10 '{2}'\" " \
        "-gravity SouthEast -draw \"text 5,15 '{2}'\" miff:- " \
@@ -239,6 +255,9 @@ system("rm {0}".format(TMPFILENAME))
 #///////////////////////////////////////////////////////////////////////////////
 
 FILENAME__TRANS2 = "{0}{1}_steghide{2}".format(OUTPUTPATH, BASENAME, EXTENSION)
+
+if not QUIET:
+    print("... creating {0} ....".format(FILENAME__TRANS2))
 
 system("steghide embed -cf \"{0}\" -ef \"{1}\" " \
        "-p \"{2}\" -q -sf \"{3}\" -f".format(INPUTFILE,
