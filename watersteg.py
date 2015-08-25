@@ -32,13 +32,17 @@
         o Steghide (http://steghide.sourceforge.net/)
 
         Usage (see arguments below) :
-        $ watersteg.py --help
-        $ watersteg.py --source IMG_4280.JPG --passphrase="secret phrase" --message="Hello !"
 
-        If you want to check what's written in your steghide'd image :
-        $ steghide extract -sf picture_steghide.jpg
+        $ watersteg.py --help
+
+        $ watersteg.py --source "img/IMG_4280.JPG" --passphrase="secret phrase" --message="Hello !"
+
+        $ watersteg.py --source path/ --passphrase="secret phrase" --message="Hello !"
 
         NB : the destination path must exist.
+
+        If you want to check what's written in a steghide'd image(s) :
+        $ steghide extract -sf picture_steghide.jpg
   ______________________________________________________________________________
 
   transformations :
@@ -49,12 +53,12 @@
                 o (resize 400x... + watermark + steghide)
                 o the watermark is a text added at several places on the
                   image.
-                o new file name : FILENAME__TRANS1
+                o new file name : see FILENAME__TRANS1__FORMAT
 
         (2) the original image is steghide'd.
 
                 o function transform2__steghide()
-                o new file name : FILENAME__TRANS2
+                o new file name : FILENAME__TRANS2__FORMAT
   ______________________________________________________________________________
 
   arguments :
@@ -64,10 +68,10 @@
   --version             show the version and exit
 
   --source SOURCE
-                        input file (default: None)
+                        input file/path (default: None)
 
   --destpath DESTPATH
-                        output path (default: .)
+                        output path (default: ./)
 
   --debug {True,False}  display debug messages (default: False)
 
@@ -82,14 +86,11 @@
 
   history :
 
-        o version 1 (2015_08_25)
+        o version 4 (2015_08_03)
 
-                o initial version, pylint:10
-
-        o version 2 (2015_08_25)
-
-                o --version argument;
-                o improve the messages display when the files are being created.
+                o --source can be a path or a filename; the wildcards are accepted;
+                o an error is raised if the source is a file and if it doesn't exist;
+                o improved the documentation;
 
         o version 3 (2015_08_25)
 
@@ -99,28 +100,51 @@
                 o temporary files are now created by calling tempfile.NamedTemporaryFile()
                 o the target files' name are defined at the beginning of the process;
                 o improved the documentation;
+
+        o version 2 (2015_08_25)
+
+                o --version argument;
+                o improve the messages display when the files are being created.
+
+        o version 1 (2015_08_25)
+
+                o initial version, pylint:10
   ______________________________________________________________________________
 
     return value/error messages
 
         o no error value is returned.
-        o error messages begin with "... !!", normal messages with "..." .
+        o error messages begin with PROMPT + " !!", normal messages with the PROMPT .
+        o debug messages begin with "@@" .
         o the --quiet option turns off normal messages, not the error ones.
           the --debug option turns on debug messages and has no effect on the normal
           or the error ones.
 """
 
 import argparse
+import fnmatch
 import os.path
 import sys
 import tempfile
 
-PROGRAM_VERSION = "3"
+PROGRAM_VERSION = "4"
 PROGRAM_NAME = "Watersteg"
+
+# prompt displayed before any message on the console :
+PROMPT = "~"
 
 # file where the message to be embed will be written. This file will be erased
 # (see the end of the file).
 STEGHIDE__EMBED_FILE = "steghide.embed"
+
+# format of the destination files :
+#
+#     o  {0} : DESTPATH
+#     o  {1} : BASENAME
+#     o  {2} : EXTENSION
+#
+FILENAME__TRANS1__FORMAT = "{0}{1}_400x_watermark_steghide{2}"
+FILENAME__TRANS2__FORMAT = "{0}{1}_steghide{2}"
 
 #///////////////////////////////////////////////////////////////////////////////
 def system(order):
@@ -132,7 +156,7 @@ def system(order):
     if DEBUG:
         print("@@ os.system() : \"{0}\"".format(order))
 
-    return os.system(order) #subprocess.call(order, shell=True)
+    return os.system(order)
 
 #///////////////////////////////////////////////////////////////////////////////
 def external_programs_are_available():
@@ -148,12 +172,13 @@ def external_programs_are_available():
 
         # TEST : does "convert" exist ?
         if result and system("convert -version > {0}".format(tmpfile.name)) != 0:
-            print("... !! ImageMagic/convert can't be find : the program has to stop.")
+            print("{0} !! ImageMagic/convert can't be find : " \
+                  "the program has to stop.".format(PROMPT))
             result = False
 
         # TEST : does "steghide" exist ?
         if result and system("steghide --version > {0}".format(tmpfile.name)) != 0:
-            print("... !! steghide can't be find : the program has to stop.")
+            print("{0} !! steghide can't be find : the program has to stop.".format(PROMPT))
             result = False
 
     return result
@@ -217,6 +242,8 @@ def transform1__r400_wm_s(sourcefilename, destfilename):
         transformation :
 
                 source file -> source file + resize 400 + watermark + steghide
+
+        this function should be only called by apply_transformations()
     """
     with tempfile.NamedTemporaryFile(mode='w', delete='True') as tmpfile:
 
@@ -225,7 +252,7 @@ def transform1__r400_wm_s(sourcefilename, destfilename):
                                                             tmpfile.name))
 
         if not QUIET:
-            print("... creating {0} ....".format(destfilename))
+            print("     {0} ... creating {1} ...".format(PROMPT, destfilename))
 
         # watermark
         system("convert -size 240x160 xc:none -fill grey " \
@@ -246,15 +273,37 @@ def transform2__steghide(sourcefilename, destfilename):
         transformation :
 
                 source file -> source file + steghide
+
+        this function should be only called by apply_transformations()
     """
     if not QUIET:
-        print("... creating {0} ....".format(destfilename))
+        print("     {0} ... creating {1} ....".format(PROMPT, destfilename))
 
-        system("steghide embed -cf \"{0}\" -ef \"{1}\" " \
-               "-p \"{2}\" -q -sf \"{3}\" -f".format(sourcefilename,
-                                                     STEGHIDE__EMBED_FILE,
-                                                     ARGS.passphrase,
-                                                     destfilename))
+    system("steghide embed -cf \"{0}\" -ef \"{1}\" " \
+           "-p \"{2}\" -q -sf \"{3}\" -f".format(sourcefilename,
+                                                 STEGHIDE__EMBED_FILE,
+                                                 ARGS.passphrase,
+                                                 destfilename))
+
+#///////////////////////////////////////////////////////////////////////////////
+def apply_transformations(destination_path,
+                          source_basename,
+                          source_extension,
+                          source_directory):
+    """
+        Apply all defined transformations to the source_* file and write the
+        resulting files in destination_path .
+    """
+    filename__trans1 = FILENAME__TRANS1__FORMAT.format(destination_path,
+                                                       source_basename,
+                                                       source_extension)
+    transform1__r400_wm_s(source_directory, filename__trans1)
+
+
+    filename__trans2 = FILENAME__TRANS2__FORMAT.format(destination_path,
+                                                       source_basename,
+                                                       source_extension)
+    transform2__steghide(source_directory, filename__trans2)
 
 #///////////////////////////////////////////////////////////////////////////////
 #///////////////////////////////////////////////////////////////////////////////
@@ -275,28 +324,38 @@ ARGS = get_args()
 QUIET = (ARGS.quiet == 'True')
 DEBUG = (ARGS.debug == 'True')
 
-# (0.b) input file, output path
+# (0.b) source file/directory
 SOURCE = ARGS.source
-BASENAME, EXTENSION = os.path.splitext(os.path.basename(SOURCE))
 
+SOURCE_TYPE = None
+if os.path.isfile(SOURCE):
+    SOURCE_TYPE = "a file"
+elif os.path.isdir(SOURCE):
+    SOURCE_TYPE = "a directory"
+else:
+    # ... hopefully something with wildcards.
+    SOURCE_TYPE = "neither a file nor a directory"
+
+# (0.c) destination path
 DESTPATH = ARGS.destpath
 if not DESTPATH.endswith("/"):
     DESTPATH += "/"
 if not os.path.exists(DESTPATH):
-    print("... !! the destination path \"{0}\"doesn't exist : " \
-          "the program has to stop.".format(DESTPATH))
+    print("{0} !! the destination path \"{1}\" doesn't exist : " \
+          "the program has to stop.".format(PROMPT, DESTPATH))
     sys.exit()
 
-# (0.c) files to be created
-FILENAME__TRANS1 = "{0}{1}_400x_watermark_steghide{2}".format(DESTPATH, BASENAME, EXTENSION)
-FILENAME__TRANS2 = "{0}{1}_steghide{2}".format(DESTPATH, BASENAME, EXTENSION)
-
-# (0.d) displaying summary
+# (0.d) displaying the summary
 if not QUIET:
-    print("=== {0} v. {1} === ".format(PROGRAM_NAME,
-                                       PROGRAM_VERSION))
-    print("... input file=\"{0}\"".format(SOURCE))
-    print("... output path=\"{0}\"".format(DESTPATH))
+    print("=== {0} v. {1} === ".format(PROGRAM_NAME, PROGRAM_VERSION))
+
+    print("{0} source=\"{1}\" ({2})".format(PROMPT, SOURCE, SOURCE_TYPE))
+    if SOURCE_TYPE == "neither a file nor a directory":
+        if not QUIET:
+            print("{0} source \"{1}\" is neither an existing file nor an existing directory : " \
+                  "it will be analysed as a path with wildcards.".format(PROMPT, SOURCE))
+
+    print("{0} output path=\"{1}\"".format(PROMPT, DESTPATH))
 
 # (0.e) are the required external programs available ?
 if not external_programs_are_available():
@@ -311,9 +370,63 @@ with open(STEGHIDE__EMBED_FILE, "w") as steghide_message:
 # (1) transformations
 #
 #///////////////////////////////////////////////////////////////////////////////
+NUMBER_OF_FILES_READ_AND_TRANSFORMED = 0
 
-transform1__r400_wm_s(SOURCE, FILENAME__TRANS1)
-transform2__steghide(SOURCE, FILENAME__TRANS2)
+if SOURCE_TYPE == 'a file':
+    # it's a file : let's read and transform it.
+
+    # e.g. if SOURCE = img/IMG_4280.JPG,
+    #           then SOURCE_BASENAME = IMG_4280.JPG
+    #           then SOURCE_EXTENSION = .JPG
+    SOURCE_BASENAME, SOURCE_EXTENSION = os.path.splitext(os.path.basename(SOURCE))
+
+    apply_transformations(destination_path=DESTPATH,
+                          source_basename=SOURCE_BASENAME,
+                          source_extension=SOURCE_EXTENSION,
+                          source_directory=SOURCE)
+
+    NUMBER_OF_FILES_READ_AND_TRANSFORMED += 1
+
+elif SOURCE_TYPE == 'a directory':
+    # it's a directory : let's read and transform every file in it.
+
+    for filename in os.listdir(SOURCE):
+
+        # e.g. if SOURCE = img/subdir/ and if filename = file001.jpg
+        #           then SOURCE_BASENAME = file001
+        #           then SOURCE_EXTENSION = .jpg
+        SOURCE_BASENAME, SOURCE_EXTENSION = \
+                            os.path.splitext(os.path.basename(os.path.join(SOURCE, filename)))
+
+        apply_transformations(destination_path=DESTPATH,
+                              source_basename=SOURCE_BASENAME,
+                              source_extension=SOURCE_EXTENSION,
+                              source_directory=os.path.join(SOURCE, filename))
+
+        NUMBER_OF_FILES_READ_AND_TRANSFORMED += 1
+
+else:
+    # SOURCE_TYPE == 'neither a file nor a directory', hopefully something with wildcards.
+
+    SOURCE_DIRECTORY = os.path.dirname(SOURCE)
+    SOURCE_NAME = os.path.basename(SOURCE)
+
+    for filename in os.listdir(SOURCE_DIRECTORY):
+        if fnmatch.fnmatch(filename, SOURCE_NAME):
+
+            SOURCE_BASENAME, SOURCE_EXTENSION = os.path.splitext(filename)
+            # e.g. if SOURCE = img/subdir/ and if filename = file001.jpg
+            #           then SOURCE_BASENAME = file001
+            #           then SOURCE_EXTENSION = .jpg
+            SOURCE_BASENAME, SOURCE_EXTENSION = \
+                      os.path.splitext(os.path.basename(os.path.join(SOURCE, filename)))
+
+            apply_transformations(destination_path=DESTPATH,
+                                  source_basename=SOURCE_BASENAME,
+                                  source_extension=SOURCE_EXTENSION,
+                                  source_directory=os.path.join(SOURCE_DIRECTORY, filename))
+
+            NUMBER_OF_FILES_READ_AND_TRANSFORMED += 1
 
 #///////////////////////////////////////////////////////////////////////////////
 #
@@ -326,4 +439,7 @@ system("rm {0}".format(STEGHIDE__EMBED_FILE))
 
 # (2b) goodbye :
 if not QUIET:
-    print("... done with \"{0}\"".format(SOURCE))
+    print("{0} done with \"{1}\" : " \
+          "{2} file(s) read and transformed.".format(PROMPT,
+                                                     SOURCE,
+                                                     NUMBER_OF_FILES_READ_AND_TRANSFORMED))
