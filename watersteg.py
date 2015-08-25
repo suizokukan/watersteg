@@ -33,23 +33,28 @@
 
         Usage (see arguments below) :
         $ watersteg.py --help
-        $ watersteg.py --inputfile IMG_4280.JPG --passphrase="secret phrase" --message="Hello !"
+        $ watersteg.py --source IMG_4280.JPG --passphrase="secret phrase" --message="Hello !"
+
+        If you want to check what's written in your steghide'd image :
+        $ steghide extract -sf picture_steghide.jpg
+
+        NB : the destination path must exist.
   ______________________________________________________________________________
 
   transformations :
 
         (1) the original image is resized, watermarked and steghide'd.
 
-                (resize 400x... + watermark + steghide)
+                o function transform1__r400_wm_s()
+                o (resize 400x... + watermark + steghide)
+                o the watermark is a text added at several places on the
+                  image.
+                o new file name : FILENAME__TRANS1
 
-                The watermark is a text added at several places on the
-                image.
+        (2) the original image is steghide'd.
 
-                new file name : FILENAME__TRANS1
-
-        (1) the original image is steghide'd.
-
-                new file name : FILENAME__TRANS2
+                o function transform2__steghide()
+                o new file name : FILENAME__TRANS2
   ______________________________________________________________________________
 
   arguments :
@@ -58,10 +63,10 @@
 
   --version             show the version and exit
 
-  --inputfile INPUTFILE
+  --source SOURCE
                         input file (default: None)
 
-  --outputpath OUTPUTPATH
+  --destpath DESTPATH
                         output path (default: .)
 
   --debug {True,False}  display debug messages (default: False)
@@ -79,17 +84,36 @@
 
         o version 1 (2015_08_25)
 
-                initial version, pylint:10
+                o initial version, pylint:10
 
         o version 2 (2015_08_25)
 
-                --version argument; improve the messages display when the files
-                are being created.
+                o --version argument;
+                o improve the messages display when the files are being created.
+
+        o version 3 (2015_08_25)
+
+                o if the outpath doesn't exist, the program exits;
+                o INPUTFILE > SOURCE, --inputfile > --source
+                o OUTPATH > DESTPATH, --outputpath > --destpath;
+                o temporary files are now created by calling tempfile.NamedTemporaryFile()
+                o the target files' name are defined at the beginning of the process;
+                o improved the documentation;
+  ______________________________________________________________________________
+
+    return value/error messages
+
+        o no error value is returned.
+        o error messages begin with "... !!", normal messages with "..." .
+        o the --quiet option turns off normal messages, not the error ones.
+          the --debug option turns on debug messages and has no effect on the normal
+          or the error ones.
 """
 
 import argparse
 import os.path
 import sys
+import tempfile
 
 PROGRAM_VERSION = "2"
 PROGRAM_NAME = "Watersteg"
@@ -120,16 +144,17 @@ def external_programs_are_available():
     """
     result = True
 
-    # TEST : does "convert" exist ?
-    if result and system("convert -version > tmpfile_zzz") != 0:
-        print("... ImageMagic/convert can't be find : the program has to stop.")
-        result = False
+    with tempfile.NamedTemporaryFile(mode='w', delete='True') as tmpfile:
 
-    # TEST : does "steghide" exist ?
-    if result and system("steghide --version > tmpfile_zzz") != 0:
-        print("... steghide can't be find : the program has to stop.")
-        result = False
-    system("rm tmpfile_zzz")
+        # TEST : does "convert" exist ?
+        if result and system("convert -version > {0}".format(tmpfile.name)) != 0:
+            print("... !! ImageMagic/convert can't be find : the program has to stop.")
+            result = False
+
+        # TEST : does "steghide" exist ?
+        if result and system("steghide --version > {0}".format(tmpfile.name)) != 0:
+            print("... !! steghide can't be find : the program has to stop.")
+            result = False
 
     return result
 
@@ -149,12 +174,12 @@ def get_args():
                         version="{0} v. {1}".format(PROGRAM_NAME, PROGRAM_VERSION),
                         help="show the version and exit")
 
-    parser.add_argument('--inputfile',
+    parser.add_argument('--source',
                         type=str,
                         required=True,
                         help="input file")
 
-    parser.add_argument('--outputpath',
+    parser.add_argument('--destpath',
                         type=str,
                         default=".",
                         help="output path")
@@ -187,11 +212,62 @@ def get_args():
     return parser.parse_args()
 
 #///////////////////////////////////////////////////////////////////////////////
+def transform1__r400_wm_s(sourcefilename, destfilename):
+    """
+        transformation :
+
+                source file -> source file + resize 400 + watermark + steghide
+    """
+    with tempfile.NamedTemporaryFile(mode='w', delete='True') as tmpfile:
+
+        # resize 400x...
+        system("convert \"{0}\" -resize 400 \"{1}\"".format(sourcefilename,
+                                                            tmpfile.name))
+
+        if not QUIET:
+            print("... creating {0} ....".format(destfilename))
+
+        # watermark
+        system("convert -size 240x160 xc:none -fill grey " \
+               "-gravity NorthWest -draw \"text 10,10 '{2}'\" " \
+               "-gravity SouthEast -draw \"text 5,15 '{2}'\" miff:- " \
+               "| composite -tile - \"{0}\" \"{1}\"".format(tmpfile.name,
+                                                            destfilename,
+                                                            ARGS.message))
+
+        # steghide
+        system("steghide embed -cf \"{0}\" -ef \"{1}\" -p \"{2}\" -q".format(destfilename,
+                                                                             STEGHIDE__EMBED_FILE,
+                                                                             ARGS.passphrase))
+
+#///////////////////////////////////////////////////////////////////////////////
+def transform2__steghide(sourcefilename, destfilename):
+    """
+        transformation :
+
+                source file -> source file + steghide
+    """
+    if not QUIET:
+        print("... creating {0} ....".format(destfilename))
+
+        system("steghide embed -cf \"{0}\" -ef \"{1}\" " \
+               "-p \"{2}\" -q -sf \"{3}\" -f".format(sourcefilename,
+                                                     STEGHIDE__EMBED_FILE,
+                                                     ARGS.passphrase,
+                                                     destfilename))
+
+#///////////////////////////////////////////////////////////////////////////////
+#///////////////////////////////////////////////////////////////////////////////
+#///                                                                         ///
 #///                            ENTRY POINT                                  ///
+#///                                                                         ///
+#///////////////////////////////////////////////////////////////////////////////
 #///////////////////////////////////////////////////////////////////////////////
 
 #///////////////////////////////////////////////////////////////////////////////
-# (0) warm-up //////////////////////////////////////////////////////////////////
+#
+# (0) warm-up
+#
 #///////////////////////////////////////////////////////////////////////////////
 
 # (0.a) arguments from the command line
@@ -200,78 +276,54 @@ QUIET = (ARGS.quiet == 'True')
 DEBUG = (ARGS.debug == 'True')
 
 # (0.b) input file, output path
-INPUTFILE = ARGS.inputfile
-BASENAME, EXTENSION = os.path.splitext(os.path.basename(INPUTFILE))
+SOURCE = ARGS.source
+BASENAME, EXTENSION = os.path.splitext(os.path.basename(SOURCE))
 
-OUTPUTPATH = ARGS.outputpath
-if not OUTPUTPATH.endswith("/"):
-    OUTPUTPATH += "/"
+DESTPATH = ARGS.destpath
+if not DESTPATH.endswith("/"):
+    DESTPATH += "/"
+if not os.path.exists(DESTPATH):
+    print("... !! the destination path \"{0}\"doesn't exist : " \
+          "the program has to stop.".format(DESTPATH))
+    sys.exit()
 
-# (0.c) summary
+# (0.c) files to be created
+FILENAME__TRANS1 = "{0}{1}_400x_watermark_steghide{2}".format(DESTPATH, BASENAME, EXTENSION)
+FILENAME__TRANS2 = "{0}{1}_steghide{2}".format(DESTPATH, BASENAME, EXTENSION)
+
+# (0.d) displaying summary
 if not QUIET:
     print("=== {0} v. {1} === ".format(PROGRAM_NAME,
                                        PROGRAM_VERSION))
-    print("... input file=\"{0}\"".format(INPUTFILE))
-    print("... output path=\"{0}\"".format(OUTPUTPATH))
+    print("... input file=\"{0}\"".format(SOURCE))
+    print("... output path=\"{0}\"".format(DESTPATH))
 
-# (0.d) are the required external programs available ?
+# (0.e) are the required external programs available ?
 if not external_programs_are_available():
     sys.exit()
 
-# (0.e) creating the embed file used by steghide :
+# (0.f) creating the embed file used by steghide :
 with open(STEGHIDE__EMBED_FILE, "w") as steghide_message:
     steghide_message.write(ARGS.message)
 
 #///////////////////////////////////////////////////////////////////////////////
-# (1) first transformation /////////////////////////////////////////////////////
-#       resize 400 + watermark + steghide
+#
+# (1) transformations
+#
 #///////////////////////////////////////////////////////////////////////////////
 
-# (temp file, to be deleted) :
-TMPFILENAME = "{0}{1}_400x{2}".format(OUTPUTPATH, BASENAME, EXTENSION)
-system("convert \"{0}\" -resize 400 \"{1}\"".format(INPUTFILE, TMPFILENAME))
-
-FILENAME__TRANS1 = "{0}{1}_400x_watermark_steghide{2}".format(OUTPUTPATH, BASENAME, EXTENSION)
-
-if not QUIET:
-    print("... creating {0} ....".format(FILENAME__TRANS1))
-
-system("convert -size 240x160 xc:none -fill grey " \
-       "-gravity NorthWest -draw \"text 10,10 '{2}'\" " \
-       "-gravity SouthEast -draw \"text 5,15 '{2}'\" miff:- " \
-       "| composite -tile - \"{0}\" \"{1}\"".format(TMPFILENAME,
-                                                    FILENAME__TRANS1,
-                                                    ARGS.message))
-
-system("steghide embed -cf \"{0}\" -ef \"{1}\" -p \"{2}\" -q".format(FILENAME__TRANS1,
-                                                                     STEGHIDE__EMBED_FILE,
-                                                                     ARGS.passphrase))
-
-system("rm {0}".format(TMPFILENAME))
+transform1__r400_wm_s(SOURCE, FILENAME__TRANS1)
+transform2__steghide(SOURCE, FILENAME__TRANS2)
 
 #///////////////////////////////////////////////////////////////////////////////
-# (2) second transformation ////////////////////////////////////////////////////
-#       steghide
+#
+# (2) before quitting
+#
 #///////////////////////////////////////////////////////////////////////////////
 
-FILENAME__TRANS2 = "{0}{1}_steghide{2}".format(OUTPUTPATH, BASENAME, EXTENSION)
-
-if not QUIET:
-    print("... creating {0} ....".format(FILENAME__TRANS2))
-
-system("steghide embed -cf \"{0}\" -ef \"{1}\" " \
-       "-p \"{2}\" -q -sf \"{3}\" -f".format(INPUTFILE,
-                                             STEGHIDE__EMBED_FILE,
-                                             ARGS.passphrase,
-                                             FILENAME__TRANS2))
-
-#///////////////////////////////////////////////////////////////////////////////
-# (3) before quitting //////////////////////////////////////////////////////////
-#///////////////////////////////////////////////////////////////////////////////
-
-# (3a) removing the embed file used by steghide :
+# (2a) removing the embed file used by steghide :
 system("rm {0}".format(STEGHIDE__EMBED_FILE))
 
-# (3b) goodbye :
+# (2b) goodbye :
 if not QUIET:
-    print("... done with \"{0}\"".format(INPUTFILE))
+    print("... done with \"{0}\"".format(SOURCE))

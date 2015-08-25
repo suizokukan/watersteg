@@ -11,7 +11,7 @@ GPLv3 / Python2|3 / Linux : apply a watermark to an image and steghide.
 
         Usage (see arguments below) :
         $ watersteg.py --help
-        $ watersteg.py --inputfile IMG_4280.JPG --passphrase="secret phrase" --message="Hello !"
+        $ watersteg.py --source IMG_4280.JPG --passphrase="secret phrase" --message="Hello !"
 
 # transformations :
 
@@ -24,7 +24,7 @@ GPLv3 / Python2|3 / Linux : apply a watermark to an image and steghide.
 
                 new file name : FILENAME__TRANS1
 
-        (1) the original image is steghide'd.
+        (2) the original image is steghide'd.
 
                 new file name : FILENAME__TRANS2
 
@@ -34,10 +34,10 @@ GPLv3 / Python2|3 / Linux : apply a watermark to an image and steghide.
 
   --version             show the version and exit
 
-  --inputfile INPUTFILE
+  --source SOURCE
                         input file (default: None)
 
-  --outputpath OUTPUTPATH
+  --outputpath DESTPATH
                         output path (default: .)
 
   --debug {True,False}  display debug messages (default: False)
