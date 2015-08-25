@@ -33,7 +33,7 @@
 
         Usage (see arguments below) :
         $ watersteg.py --help
-        $ watersteg.py --inputfile IMG_4280.JPG --passphrase="secret pass" --message="Hello !"
+        $ watersteg.py --inputfile IMG_4280.JPG --passphrase="secret phrase" --message="Hello !"
   ______________________________________________________________________________
 
   transformations :

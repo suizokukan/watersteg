@@ -11,7 +11,7 @@ GPLv3 / Python2|3 / Linux : apply a watermark to an image and steghide.
 
         Usage (see arguments below) :
         $ watersteg.py --help
-        $ watersteg.py --inputfile IMG_4280.JPG --passphrase="secret pass" --message="Hello !"
+        $ watersteg.py --inputfile IMG_4280.JPG --passphrase="secret phrase" --message="Hello !"
 
 # transformations :
 
