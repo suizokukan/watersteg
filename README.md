@@ -13,22 +13,27 @@ GPLv3 / Python2|3 / Linux : apply a watermark to an image and steghide.
         $ watersteg.py --help
         $ watersteg.py --source IMG_4280.JPG --passphrase="secret phrase" --message="Hello !"
 
-# transformations :
+        If you want to check what's written in your steghide'd image :
+        $ steghide extract -sf picture_steghide.jpg
+
+        NB : the destination path must exist.
+
+#  transformations :
 
         (1) the original image is resized, watermarked and steghide'd.
 
-                (resize 400x... + watermark + steghide)
-
-                The watermark is a text added at several places on the
-                image.
-
-                new file name : FILENAME__TRANS1
+                o function transform1__r400_wm_s()
+                o (resize 400x... + watermark + steghide)
+                o the watermark is a text added at several places on the
+                  image.
+                o new file name : FILENAME__TRANS1
 
         (2) the original image is steghide'd.
 
-                new file name : FILENAME__TRANS2
-
-# arguments :
+                o function transform2__steghide()
+                o new file name : FILENAME__TRANS2
+    
+#   arguments :
 
   -h, --help            show this help message and exit
 
@@ -37,7 +42,7 @@ GPLv3 / Python2|3 / Linux : apply a watermark to an image and steghide.
   --source SOURCE
                         input file (default: None)
 
-  --outputpath DESTPATH
+  --destpath DESTPATH
                         output path (default: .)
 
   --debug {True,False}  display debug messages (default: False)
@@ -49,13 +54,31 @@ GPLv3 / Python2|3 / Linux : apply a watermark to an image and steghide.
 
   --quiet {True,False}  disallow common messages' display; only the error
                         messages will be display (default: False)
-# history :
+    
+#  history :
 
         o version 1 (2015_08_25)
 
-                initial version, pylint:10
-    
+                o initial version, pylint:10
+
         o version 2 (2015_08_25)
 
-                --version argument; improve the messages display when the files
-                are being created.
+                o --version argument;
+                o improve the messages display when the files are being created.
+
+        o version 3 (2015_08_25)
+
+                o if the outpath doesn't exist, the program exits;
+                o INPUTFILE > SOURCE, --inputfile > --source
+                o OUTPATH > DESTPATH, --outputpath > --destpath;
+                o temporary files are now created by calling tempfile.NamedTemporaryFile()
+                o the target files' name are defined at the beginning of the process;
+                o improved the documentation;
+
+# return value/error messages
+
+        o no error value is returned.
+        o error messages begin with "... !!", normal messages with "..." .
+        o the --quiet option turns off normal messages, not the error ones.
+          the --debug option turns on debug messages and has no effect on the normal
+          or the error ones.
