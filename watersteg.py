@@ -59,7 +59,7 @@
         (2) the original image is steghide'd.
 
                 o function transform2__steghide()
-                o new file name : FILENAME__TRANS2__FORMAT
+                o new file name : see FILENAME__TRANS2__FORMAT
   ______________________________________________________________________________
 
   Arguments :
