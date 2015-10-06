@@ -34,9 +34,15 @@
   Usage (see detailed arguments below) :
 
         $ watersteg.py --help
-        $ watersteg.py --source "img/IMG_4280.JPG" --passphrase="secret phrase" --message="Hello !"
-        $ watersteg.py --source path/ --passphrase="secret phrase" --message="Hello !"
-        $ watersteg.py --source path/*.jpg --passphrase="secret phrase" --message="Hello !"
+
+        $ watersteg.py --source "img/IMG_4280.JPG"
+                       --passphrase="secret phrase" --message="Hello !" --overlay="overlay.png"
+
+        $ watersteg.py --source path/
+                       --passphrase="secret phrase" --message="Hello !" --overlay="overlay.png"
+
+        $ watersteg.py --source path/*.jpg
+                       --passphrase="secret phrase" --message="Hello !" --overlay="overlay.png"
 
         NB : the destination path must exist.
 
@@ -60,6 +66,12 @@
 
                 o function transform2__steghide()
                 o new file name : see FILENAME__TRANS2__FORMAT
+
+        (3) the original image is steghide'd and an overlay is put over.
+
+                o function transform3__steghide_overlay()
+                o new file name : see FILENAME__TRANS3__FORMAT
+
   ______________________________________________________________________________
 
   Arguments :
@@ -86,6 +98,11 @@
   ______________________________________________________________________________
 
   History :
+
+        o version 5 (2015_10_06)
+
+                o added a third transformation : transform3__steghide_overlay()
+                o raw Pylint : 10
 
         o version 4 (2015_08_03)
 
@@ -130,10 +147,11 @@
 import argparse
 import fnmatch
 import os.path
+from subprocess import check_output
 import sys
 import tempfile
 
-PROGRAM_VERSION = "4"
+PROGRAM_VERSION = "5"
 PROGRAM_NAME = "Watersteg"
 
 # prompt displayed before any message on the console :
@@ -151,6 +169,7 @@ STEGHIDE__EMBED_FILE = "steghide.embed"
 #
 FILENAME__TRANS1__FORMAT = "{0}{1}_400x_watermark_steghide{2}"
 FILENAME__TRANS2__FORMAT = "{0}{1}_steghide{2}"
+FILENAME__TRANS3__FORMAT = "{0}{1}_steghide_overlay{2}"
 
 #///////////////////////////////////////////////////////////////////////////////
 def system(order):
@@ -236,6 +255,11 @@ def get_args():
                         help="disallow common messages' display; " \
                              "only the error messages will be display")
 
+    parser.add_argument('--overlay',
+                        type=str,
+                        required=True,
+                        help="Overlay file to be used.")
+
     return parser.parse_args()
 
 #///////////////////////////////////////////////////////////////////////////////
@@ -288,10 +312,38 @@ def transform2__steghide(sourcefilename, destfilename):
                                                  destfilename))
 
 #///////////////////////////////////////////////////////////////////////////////
+def transform3__steghide_overlay(sourcefilename, destfilename, overlay):
+    """
+        transformation :
+
+                source file -> source file + steghide + overlay
+
+        this function should be only called by apply_transformations()
+    """
+    if not ARGS.quiet:
+        print("     {0} ... creating {1} ....".format(PROMPT, destfilename))
+
+    system("steghide embed -cf \"{0}\" -ef \"{1}\" " \
+           "-p \"{2}\" -q -sf \"{3}\" -f".format(sourcefilename,
+                                                 STEGHIDE__EMBED_FILE,
+                                                 ARGS.passphrase,
+                                                 destfilename))
+
+    # size of the dest file name ?
+    size = check_output(["identify", "-format", "%wx%h", destfilename])
+
+    system("convert -size {0} -composite {1} {2} " \
+           "-geometry {0}+0+0 -depth 8 {3}".format(size.decode(),
+                                                   destfilename,
+                                                   overlay,
+                                                   destfilename))
+
+#///////////////////////////////////////////////////////////////////////////////
 def apply_transformations(destination_path,
                           source_basename,
                           source_extension,
-                          source_directory):
+                          source_directory,
+                          overlay):
     """
         Apply all defined transformations to the source_* file and write the
         resulting files in destination_path .
@@ -306,6 +358,11 @@ def apply_transformations(destination_path,
                                                        source_basename,
                                                        source_extension)
     transform2__steghide(source_directory, filename__trans2)
+
+    filename__trans3 = FILENAME__TRANS3__FORMAT.format(destination_path,
+                                                       source_basename,
+                                                       source_extension)
+    transform3__steghide_overlay(source_directory, filename__trans3, overlay)
 
 #///////////////////////////////////////////////////////////////////////////////
 #///////////////////////////////////////////////////////////////////////////////
@@ -345,7 +402,10 @@ if not os.path.exists(DESTPATH):
           "the program has to stop.".format(PROMPT, DESTPATH))
     sys.exit()
 
-# (0.d) displaying the summary
+# (0.d) overlay file
+OVERLAY = ARGS.overlay
+
+# (0.e) displaying the summary
 if not ARGS.quiet:
     print("=== {0} v. {1} === ".format(PROGRAM_NAME, PROGRAM_VERSION))
 
@@ -356,11 +416,11 @@ if not ARGS.quiet:
 
     print("{0} output path=\"{1}\"".format(PROMPT, DESTPATH))
 
-# (0.e) are the required external programs available ?
+# (0.f) are the required external programs available ?
 if not external_programs_are_available():
     sys.exit()
 
-# (0.f) creating the embed file used by steghide :
+# (0.g) creating the embed file used by steghide :
 with open(STEGHIDE__EMBED_FILE, "w") as steghide_message:
     steghide_message.write(ARGS.message)
 
@@ -382,7 +442,8 @@ if SOURCE_TYPE == 'a file':
     apply_transformations(destination_path=DESTPATH,
                           source_basename=SOURCE_BASENAME,
                           source_extension=SOURCE_EXTENSION,
-                          source_directory=SOURCE)
+                          source_directory=SOURCE,
+                          overlay=OVERLAY)
 
     NUMBER_OF_FILES_READ_AND_TRANSFORMED += 1
 
@@ -400,7 +461,8 @@ elif SOURCE_TYPE == 'a directory':
         apply_transformations(destination_path=DESTPATH,
                               source_basename=SOURCE_BASENAME,
                               source_extension=SOURCE_EXTENSION,
-                              source_directory=os.path.join(SOURCE, filename))
+                              source_directory=os.path.join(SOURCE, filename),
+                              overlay=OVERLAY)
 
         NUMBER_OF_FILES_READ_AND_TRANSFORMED += 1
 
@@ -423,7 +485,8 @@ else:
             apply_transformations(destination_path=DESTPATH,
                                   source_basename=SOURCE_BASENAME,
                                   source_extension=SOURCE_EXTENSION,
-                                  source_directory=os.path.join(SOURCE_DIRECTORY, filename))
+                                  source_directory=os.path.join(SOURCE_DIRECTORY, filename),
+                                  overlay=OVERLAY)
 
             NUMBER_OF_FILES_READ_AND_TRANSFORMED += 1
 
