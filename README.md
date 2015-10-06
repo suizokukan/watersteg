@@ -9,10 +9,11 @@
 
 # Usage (see detailed arguments below) :
 
-        $ watersteg.py --help
-        $ watersteg.py --source "img/IMG_4280.JPG" --passphrase="secret phrase" --message="Hello !"
-        $ watersteg.py --source path/ --passphrase="secret phrase" --message="Hello !"
-        $ watersteg.py --source path/*.jpg --passphrase="secret phrase" --message="Hello !"
+        $ watersteg.py --source "img/IMG_4280.JPG" --passphrase="secret phrase" --message="Hello !" --overlay="overlay.png"
+
+        $ watersteg.py --source path/ --passphrase="secret phrase" --message="Hello !" --overlay="overlay.png"
+
+        $ watersteg.py --source path/*.jpg --passphrase="secret phrase" --message="Hello !" --overlay="overlay.png"
 
         NB : the destination path must exist.
 
