@@ -36,17 +36,22 @@
 
                 o function transform2__steghide()
                 o new file name : see FILENAME__TRANS2__FORMAT
+
+        (3) the original image is steghide'd with an overlay placed over it
+
+                o function transform3__steghide_overlay()
+                o new file name : see FILENAME__TRANS3__FORMAT
+    
 # Arguments :
 
   -h, --help            show this help message and exit
 
   --version             show the version and exit
 
-  --source SOURCE
-                        input file/path (default: None). Wildcards accepted.
+  --source SOURCE       input file or input directory. Wildcards accepted
+                        (default: None)
 
-  --destpath DESTPATH
-                        output path (default: ./)
+  --destpath DESTPATH   output path (default: .)
 
   --debug               display debug messages (default: False)
 
@@ -57,7 +62,15 @@
 
   --quiet               disallow common messages' display; only the error
                         messages will be display (default: False)
+
+  --overlay OVERLAY     Overlay file to be used. (default: None)
+   
 # History :
+
+        o version 5 (2015_10_06)
+
+                o added a third transformation : transform3__steghide_overlay()
+                o raw Pylint : 10
 
         o version 4 (2015_08_03)
 
