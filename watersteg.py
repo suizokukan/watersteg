@@ -167,9 +167,9 @@ STEGHIDE__EMBED_FILE = "steghide.embed"
 #     o  {1} : BASENAME
 #     o  {2} : EXTENSION
 #
-FILENAME__TRANS1__FORMAT = "{0}{1}_400x_watermark_steghide{2}"
-FILENAME__TRANS2__FORMAT = "{0}{1}_steghide{2}"
-FILENAME__TRANS3__FORMAT = "{0}{1}_steghide_overlay{2}"
+FILENAME__TRANS1__FORMAT = "{0}{1}_1_400x_watermark_steghide{2}"
+FILENAME__TRANS2__FORMAT = "{0}{1}_2_steghide{2}"
+FILENAME__TRANS3__FORMAT = "{0}{1}_3_steghide_overlay{2}"
 
 #///////////////////////////////////////////////////////////////////////////////
 def system(order):
