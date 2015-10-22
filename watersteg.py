@@ -323,20 +323,20 @@ def transform3__steghide_overlay(sourcefilename, destfilename, overlay):
     if not ARGS.quiet:
         print("     {0} ... creating {1} ....".format(PROMPT, destfilename))
 
+    # dimensions of the source file  ?
+    size = check_output(["identify", "-format", "%wx%h", sourcefilename])
+
+    system("convert -size {0} -composite \"{1}\" \"{2}\" " \
+           "-geometry {0}+0+0 -depth 8 \"{3}\"".format(size.decode(),
+                                                       sourcefilename,
+                                                       overlay,
+                                                       destfilename))
+
     system("steghide embed -cf \"{0}\" -ef \"{1}\" " \
-           "-p \"{2}\" -q -sf \"{3}\" -f".format(sourcefilename,
+           "-p \"{2}\" -q -sf \"{3}\" -f".format(destfilename,
                                                  STEGHIDE__EMBED_FILE,
                                                  ARGS.passphrase,
                                                  destfilename))
-
-    # size of the dest file name ?
-    size = check_output(["identify", "-format", "%wx%h", destfilename])
-
-    system("convert -size {0} -composite {1} {2} " \
-           "-geometry {0}+0+0 -depth 8 {3}".format(size.decode(),
-                                                   destfilename,
-                                                   overlay,
-                                                   destfilename))
 
 #///////////////////////////////////////////////////////////////////////////////
 def apply_transformations(destination_path,
