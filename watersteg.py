@@ -72,6 +72,15 @@
                 o function transform3__steghide_overlay()
                 o new file name : see FILENAME__TRANS3__FORMAT
 
+        (4) the original image is written in grayscale and is steghide'd.
+
+                o function transform2__steghide()
+                o new file name : see FILENAME__TRANS4__FORMAT
+
+        (5) the original image is written in grayscale, steghide'd and an overlay is put over.
+
+                o function transform3__steghide_overlay()
+                o new file name : see FILENAME__TRANS5__FORMAT
   ______________________________________________________________________________
 
   Arguments :
@@ -170,6 +179,8 @@ STEGHIDE__EMBED_FILE = "steghide.embed"
 FILENAME__TRANS1__FORMAT = "{0}{1}_1_400x_watermark_steghide{2}"
 FILENAME__TRANS2__FORMAT = "{0}{1}_2_steghide{2}"
 FILENAME__TRANS3__FORMAT = "{0}{1}_3_steghide_overlay{2}"
+FILENAME__TRANS4__FORMAT = "{0}{1}_4_gray_steghide{2}"
+FILENAME__TRANS5__FORMAT = "{0}{1}_5_gray_steghide_overlay{2}"
 
 #///////////////////////////////////////////////////////////////////////////////
 def system(order):
@@ -339,6 +350,54 @@ def transform3__steghide_overlay(sourcefilename, destfilename, overlay):
                                                  destfilename))
 
 #///////////////////////////////////////////////////////////////////////////////
+def transform4__grayscale__steghide(sourcefilename, destfilename):
+    """
+        transformation :
+
+                source file -> source file in gray + steghide
+
+        this function should be only called by apply_transformations()
+    """
+    if not ARGS.quiet:
+        print("     {0} ... creating {1} ....".format(PROMPT, destfilename))
+
+    system("convert -grayscale rec709luma \"{0}\" \"{1}\"".format(sourcefilename,
+                                                                  destfilename))
+
+    system("steghide embed -cf \"{0}\" -ef \"{1}\" " \
+           "-p \"{2}\" -q -sf \"{3}\" -f".format(destfilename,
+                                                 STEGHIDE__EMBED_FILE,
+                                                 ARGS.passphrase,
+                                                 destfilename))
+
+#///////////////////////////////////////////////////////////////////////////////
+def transform5__grayscale__steghide_overlay(sourcefilename, destfilename, overlay):
+    """
+        transformation :
+
+                source file -> source file + steghide + overlay
+
+        this function should be only called by apply_transformations()
+    """
+    if not ARGS.quiet:
+        print("     {0} ... creating {1} ....".format(PROMPT, destfilename))
+
+    # dimensions of the source file  ?
+    size = check_output(["identify", "-format", "%wx%h", sourcefilename])
+
+    system("convert -grayscale rec709luma -size {0} -composite \"{1}\" \"{2}\" " \
+           "-geometry {0}+0+0 -depth 8 \"{3}\"".format(size.decode(),
+                                                       sourcefilename,
+                                                       overlay,
+                                                       destfilename))
+
+    system("steghide embed -cf \"{0}\" -ef \"{1}\" " \
+           "-p \"{2}\" -q -sf \"{3}\" -f".format(destfilename,
+                                                 STEGHIDE__EMBED_FILE,
+                                                 ARGS.passphrase,
+                                                 destfilename))
+
+#///////////////////////////////////////////////////////////////////////////////
 def apply_transformations(destination_path,
                           source_basename,
                           source_extension,
@@ -364,6 +423,17 @@ def apply_transformations(destination_path,
                                                        source_extension)
     transform3__steghide_overlay(source_directory, filename__trans3, overlay)
 
+    filename__trans4 = FILENAME__TRANS4__FORMAT.format(destination_path,
+                                                       source_basename,
+                                                       source_extension)
+    transform4__grayscale__steghide(source_directory, filename__trans4)
+
+    filename__trans5 = FILENAME__TRANS5__FORMAT.format(destination_path,
+                                                       source_basename,
+                                                       source_extension)
+    transform5__grayscale__steghide_overlay(source_directory, filename__trans5, overlay)
+
+
 #///////////////////////////////////////////////////////////////////////////////
 #///////////////////////////////////////////////////////////////////////////////
 #///                                                                         ///
@@ -382,7 +452,7 @@ def apply_transformations(destination_path,
 ARGS = get_args()
 
 # (0.b) source file/directory
-SOURCE = ARGS.source
+SOURCE = os.path.expanduser(ARGS.source)
 
 SOURCE_TYPE = None
 if os.path.isfile(SOURCE):
@@ -394,7 +464,7 @@ else:
     SOURCE_TYPE = "neither a file nor a directory"
 
 # (0.c) destination path
-DESTPATH = ARGS.destpath
+DESTPATH = os.path.expanduser(ARGS.destpath)
 if not DESTPATH.endswith("/"):
     DESTPATH += "/"
 if not os.path.exists(DESTPATH):
@@ -403,7 +473,7 @@ if not os.path.exists(DESTPATH):
     sys.exit()
 
 # (0.d) overlay file
-OVERLAY = ARGS.overlay
+OVERLAY = os.path.expanduser(ARGS.overlay)
 
 # (0.e) displaying the summary
 if not ARGS.quiet:
