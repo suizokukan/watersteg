@@ -72,12 +72,12 @@
                 o function transform3__steghide_overlay()
                 o new file name : see FILENAME__TRANS3__FORMAT
 
-        (4) the original image is written in grayscale and is steghide'd.
+        (4) the original image is written in gray and is steghide'd.
 
                 o function transform2__steghide()
                 o new file name : see FILENAME__TRANS4__FORMAT
 
-        (5) the original image is written in grayscale, steghide'd and an overlay is put over.
+        (5) the original image is written in gray, steghide'd and an overlay is put over.
 
                 o function transform3__steghide_overlay()
                 o new file name : see FILENAME__TRANS5__FORMAT
@@ -107,6 +107,15 @@
   ______________________________________________________________________________
 
   History :
+
+        o version 6 (2015_10_25)
+
+                o added a fifth transformation : transf5__gray__steg_overlay()
+                o added a fourth transformation : transform4__gray__steghide()
+                o added a call to os.path.expanduser() to developp ~ character.
+
+                o fixed the transformation #3 : steghide is now the last step.
+                o improved various messages
 
         o version 5 (2015_10_06)
 
@@ -350,7 +359,7 @@ def transform3__steghide_overlay(sourcefilename, destfilename, overlay):
                                                  destfilename))
 
 #///////////////////////////////////////////////////////////////////////////////
-def transform4__grayscale__steghide(sourcefilename, destfilename):
+def transform4__gray__steghide(sourcefilename, destfilename):
     """
         transformation :
 
@@ -371,7 +380,7 @@ def transform4__grayscale__steghide(sourcefilename, destfilename):
                                                  destfilename))
 
 #///////////////////////////////////////////////////////////////////////////////
-def transform5__grayscale__steghide_overlay(sourcefilename, destfilename, overlay):
+def transf5__gray__steg_overlay(sourcefilename, destfilename, overlay):
     """
         transformation :
 
@@ -426,12 +435,12 @@ def apply_transformations(destination_path,
     filename__trans4 = FILENAME__TRANS4__FORMAT.format(destination_path,
                                                        source_basename,
                                                        source_extension)
-    transform4__grayscale__steghide(source_directory, filename__trans4)
+    transform4__gray__steghide(source_directory, filename__trans4)
 
     filename__trans5 = FILENAME__TRANS5__FORMAT.format(destination_path,
                                                        source_basename,
                                                        source_extension)
-    transform5__grayscale__steghide_overlay(source_directory, filename__trans5, overlay)
+    transf5__gray__steg_overlay(source_directory, filename__trans5, overlay)
 
 
 #///////////////////////////////////////////////////////////////////////////////
