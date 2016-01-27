@@ -41,6 +41,16 @@
 
                 o function transform3__steghide_overlay()
                 o new file name : see FILENAME__TRANS3__FORMAT
+
+        (4) the original image is written in gray and is steghide'd.
+
+                o function transform2__steghide()
+                o new file name : see FILENAME__TRANS4__FORMAT
+
+        (5) the original image is written in gray, steghide'd and an overlay is put over.
+
+                o function transform3__steghide_overlay()
+                o new file name : see FILENAME__TRANS5__FORMAT
     
 # Arguments :
 
@@ -66,6 +76,15 @@
   --overlay OVERLAY     Overlay file to be used. (default: None)
    
 # History :
+
+        o version 6 (2015_10_25)
+
+                o added a fifth transformation : transf5__gray__steg_overlay()
+                o added a fourth transformation : transform4__gray__steghide()
+                o added a call to os.path.expanduser() to developp ~ character.
+
+                o fixed the transformation #3 : steghide is now the last step.
+                o improved various messages
 
         o version 5 (2015_10_06)
 
