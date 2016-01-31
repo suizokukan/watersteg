@@ -4,6 +4,7 @@
      transformations (watermark + steghide) to an image or a group of images.
 
      External programs required by watersteg :
+
          o ImageMagick (http://www.imagemagick.org/script/index.php)
          o Steghide (http://steghide.sourceforge.net/)
 
@@ -74,6 +75,28 @@
                         messages will be display (default: False)
 
   --overlay OVERLAY     Overlay file to be used. (default: None)
+
+# arguments :
+
+  Arguments :
+
+    usage: watersteg.py [-h] [--version] --source SOURCE [--destpath DESTPATH]
+                        [--debug] --passphrase PASSPHRASE --message MESSAGE
+                        [--quiet] --overlay OVERLAY
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      --version             show the version and exit
+      --source SOURCE       input file or input directory. Wildcards accepted
+                            (default: None)
+      --destpath DESTPATH   output path (default: .)
+      --debug               display debug messages (default: False)
+      --passphrase PASSPHRASE
+                            steghide passphrase (default: passphrase)
+      --message MESSAGE     steghide message to be embed (default: message)
+      --quiet               disallow common messages' display; only the error
+                            messages will be display (default: False)
+      --overlay OVERLAY     Overlay file to be used. (default: None)
    
 # History :
 
