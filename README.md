@@ -127,4 +127,4 @@
         o debug messages begin with "@@" .
         o the --quiet option turns off normal messages, not the error ones.
           the --debug option turns on debug messages and has no effect on the normal
-          or the error ones.
+          messages or on the error ones.
